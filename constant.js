@@ -13,23 +13,6 @@ const templateStart = `
   <body>
     <div id="app">
       <div class="head">
-        <div
-          clsss="head-content"
-          style="display: flex; justify-content: space-between; align-items: center;"
-        >
-          <div class="head-left">
-            <div class="pl-div">
-              <img class="pl-img" :src="headUrl" alt="博主头像" />
-            </div>
-            <div>{{ author }}</div>
-          </div>
-
-          <div class="head-right">
-            <button class="pl-btn follow" @click="followStatus = !followStatus">
-              {{ followStatus ? "+ 关注" : "✔ 已关注" }}
-            </button>
-          </div>
-        </div>
       </div>
       <div class="main">
 `;
@@ -79,8 +62,6 @@ const templateEnd = `
         return {
           headUrl: config.defaultHeadBaseUrl + "default_head.png",
           followStatus: false,
-          author: "",
-          authorHeadUrl: "",
           userName: "",
           remoteBaseUrl: "",
           list: "",
@@ -95,12 +76,6 @@ const templateEnd = `
       },
       methods: {
         initData() {
-          this.author = localStorage.getItem("author")
-            ? localStorage.getItem("author")
-            : "error";
-          this.authorHeadUrl = localStorage.getItem("authorHeadUrl")
-            ? localStorage.getItem("authorHeadUrl")
-            : "http://116.63.152.202:5002/userHead/default_head.png";
           this.userName = localStorage.getItem("userName")
             ? localStorage.getItem("userName")
             : null;

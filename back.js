@@ -26,34 +26,24 @@ let resultTemplate = {
 };
 
 app.get("/new", function (req, res) {
-  if (req.query.new_owner_id > 0) {
-    connection.query(
-      "select * from new join (select user_id,user_name,user_account,user_head from user) as u on new_owner_id = u.user_id;",
-      function (error, result) {
-        if (error) throw error;
-        resultTemplate.code = 200;
-        resultTemplate.msg = "success";
-        resultTemplate.data = result;
-        res.send(resultTemplate);
-      }
-    );
-  } else {
-    connection.query(
-      "select * from new where new_owner_id = ?",
-      function (error, result) {
-        if (error) throw error;
-        resultTemplate.code = 200;
-        resultTemplate.msg = "success";
-        resultTemplate.data = result;
-        res.send(resultTemplate);
-      }
-    );
-  }
+  connection.query(
+    "select * from new join (select user_id,user_name,user_account,user_head from user) as u on new_owner_id = u.user_id;",
+    function (error, result) {
+      if (error) throw error;
+      resultTemplate.code = 200;
+      resultTemplate.msg = "success";
+      resultTemplate.data = result;
+      res.send(resultTemplate);
+    }
+  );
 });
 app.get("/fan", function (req, res) {
   const fanId = req.query.fan_id;
   connection.query(
-    "select * from (select * from fans where fan_id = ?) as a join new on new_owner_id = blogger_id;",
+    `select * from (select * from (select * from fans where fan_id = ?) as f
+    join (select user_id,user_name,user_account,user_head from user) as u
+    on f.blogger_id = u.user_id) as fu
+    join (select * from new) as n on fu.blogger_id = n.new_owner_id;`,
     [fanId],
     function (error, result) {
       if (error) throw error;
@@ -67,33 +57,58 @@ app.get("/fan", function (req, res) {
 app.get("/authorInfo", function (req, res) {
   const fanId = req.query.fan_id;
   const authorId = req.query.blogger_id;
+  const r = obEmpty();
   connection.query(
-    "select user_name,user_head from user where user_id = ?;",
-    [authorId],
+    "select * from fans where blogger_id = ? and fan_id = ?;",
+    [authorId, fanId],
     function (error, result) {
       if (error) throw error;
-      resultTemplate.data = {
-        authorName: result[0].user_name,
-        authorHeadUrl: result[0].user_head,
-        relate: false,
-      };
+      // 结果基类一定要初始化置空
+      r.code = 200;
+      r.msg = "success";
+      r.data = {};
+      r.data.relate = result.length ? true : false;
       connection.query(
-        "select * from fans where blogger_id = ? and fan_id = ?;",
-        [authorId, fanId],
+        "select count(*) as total from fans where blogger_id = ?;",
+        [authorId],
         function (error, result) {
           if (error) throw error;
-          resultTemplate.data.relate = result.length ? true : false;
-          resultTemplate.code = 200;
-          resultTemplate.msg = "success";
-          res.send(resultTemplate);
+          r.data.fanTotal = result[0].total;
+          res.send(r);
         }
       );
     }
   );
 });
 app.get("/addFollow", function (req, res) {
-  const fanId = req.query.fan_id;
   const authorId = req.query.blogger_id;
+  const fanId = req.query.fan_id;
+  const r = obEmpty();
+  connection.query(
+    "INSERT INTO fans(blogger_id,fan_id) VALUES(?,?);",
+    [authorId, fanId],
+    function (error, result) {
+      if (error) throw error;
+      r.code = 200;
+      r.msg = "success";
+      res.send(r);
+    }
+  );
+});
+app.get("/cancelFollow", function (req, res) {
+  const authorId = req.query.blogger_id;
+  const fanId = req.query.fan_id;
+  const r = obEmpty();
+  connection.query(
+    "DELETE FROM fans WHERE blogger_id = ? and fan_id = ?;",
+    [authorId, fanId],
+    function (error, result) {
+      if (error) throw error;
+      r.code = 200;
+      r.msg = "success";
+      res.send(r);
+    }
+  );
 });
 app.get("/getCommentData", function (req, res) {
   connection.query(
@@ -128,6 +143,13 @@ app.get("/addComment", function (req, res) {
     }
   );
 });
+function obEmpty() {
+  return {
+    code: "",
+    msg: "",
+    data: "",
+  };
+}
 
 var server = app.listen(3000, function () {
   console.log("runing 3000...");
