@@ -37,6 +37,19 @@ app.get("/new", function (req, res) {
     }
   );
 });
+app.get("/userArticle", function (req, res) {
+  connection.query(
+    "select * from new join (select user_id,user_name,user_account,user_head from user where user_account = ?) as u on new_owner_id = u.user_id;",
+    [req.query.userAccount],
+    function (error, result) {
+      if (error) throw error;
+      resultTemplate.code = 200;
+      resultTemplate.msg = "success";
+      resultTemplate.data = result;
+      res.send(resultTemplate);
+    }
+  );
+});
 app.get("/fan", function (req, res) {
   const fanId = req.query.fan_id;
   connection.query(
@@ -122,26 +135,46 @@ app.get("/getCommentData", function (req, res) {
   );
 });
 app.get("/addComment", function (req, res) {
-  connection.query(
-    "call proc_commentByInsert(?,?,?,?,?,?,?)",
-    [
-      req.query.new_id,
+  const r = obEmpty();
+  if (req.query.rid != parseInt(req.query.commentator_id)) {
+    sendMsg(
+      parseInt(req.query.rid),
       req.query.content,
-      req.query.create_time,
-      req.query.commentator_id,
-      req.query.commentator_name,
+      req.query.rname,
       req.query.commentator_head_url,
-      req.query.parent_id,
-    ],
-    function (error, result) {
-      if (error) throw error;
-      else {
-        resultTemplate.msg = "success";
-        resultTemplate.data = "";
-        res.send(resultTemplate);
-      }
-    }
-  );
+      req.query.contentUrl
+    );
+  }
+  res.send("success");
+  // connection.query(
+  //   "call proc_commentByInsert(?,?,?,?,?,?,?)",
+  //   [
+  //     req.query.new_id,
+  //     req.query.content,
+  //     req.query.create_time,
+  //     req.query.commentator_id,
+  //     req.query.commentator_name,
+  //     req.query.commentator_head_url,
+  //     req.query.parent_id,
+  //   ],
+  //   function (error, result) {
+  //     if (error) throw error;
+  //     else {
+  //       r.msg = "success";
+  //       r.data = "";
+  //       res.send(r);
+  //       if (req.query.rid != parseInt(req.query.commentator_id)) {
+  //         sendMsg(
+  //           parseInt(req.query.rid),
+  //           req.query.content,
+  //           req.query.rname,
+  //           req.query.headUrl,
+  //           req.query.contentUrl
+  //         );
+  //       }
+  //     }
+  //   }
+  // );
 });
 function obEmpty() {
   return {
@@ -150,6 +183,48 @@ function obEmpty() {
     data: "",
   };
 }
+function sendMsg(id, content, name, headUrl, contentUrl) {
+  const msg = {
+    id: id,
+    content: content,
+    name: name,
+    headUrl: headUrl,
+    contentUrl: contentUrl,
+  };
+  console.log(JSON.stringify(msg));
+  wss.clients.forEach((item) => {
+    if (item.id == id - 0) {
+      item.send(JSON.stringify(msg));
+    }
+  });
+}
+var WebSocketServer = require("ws").Server;
+let clients = []; //存所有连接上的用户
+wss = new WebSocketServer({ port: 8181 }); //服务端口8181
+wss.on("connection", function (ws) {
+  console.log("服务端：客户端已连接");
+  ws.on("message", function (message) {
+    //打印客户端监听的消息
+    console.log(message);
+    //每个客户端都存上自己发来的phone做为唯一的id
+    ws.id = message - 0;
+    //连接上后就压进数组
+    let flag = false;
+    clients.forEach((item) => {
+      if (item.id == ws.id) {
+        flag = true;
+      }
+    });
+    if (!flag) clients.push(ws);
+    console.log(clients.toString());
+  });
+  ws.on("close", (msg) => {
+    clients = clients.filter((item) => {
+      return item.id != ws.id;
+    });
+    console.log("与前端断开连接", clients.toString());
+  });
+});
 
 var server = app.listen(3000, function () {
   console.log("runing 3000...");
