@@ -26,8 +26,10 @@ let resultTemplate = {
 };
 
 app.get("/new", function (req, res) {
+  const offset = req.query.offset ? parseInt(req.query.offset) : 0;
   connection.query(
-    "select * from new join (select user_id,user_name,user_account,user_head from user) as u on new_owner_id = u.user_id;",
+    "select * from new join (select user_id,user_name,user_account,user_head from user) as u on new_owner_id = u.user_id limit ?,10;",
+    [offset],
     function (error, result) {
       if (error) throw error;
       resultTemplate.code = 200;
@@ -129,52 +131,100 @@ app.get("/getCommentData", function (req, res) {
     [req.query.new_id],
     function (error, result) {
       if (error) throw error;
-      resultTemplate.data = result;
+      resultTemplate.data = dataConvert(result);
       res.send(resultTemplate);
     }
   );
 });
+function dataConvert(d) {
+  /**
+   * dataConvert 为传入的 comment 表数据
+   * 添加了两个字段，son and rname，son
+   * 是存放第 2 级 - 第 n 级 comment 的
+   * 数组，rname 是父评论用户的名称
+   */
+  const content = d;
+  content.forEach((item, index) => {
+    content[index].son = [];
+  });
+  const data = [];
+  const key = [];
+  let index = 0;
+  content.forEach(item => {
+    if (item.parent_id == 0) {
+      data.push(item);
+      key[item.id] = index;
+      index++;
+    } else {
+      if (key[item.parent_id] == undefined) {
+        // 3 - n 级评论
+        for (let i = 0; i < key.length; i++) {
+          if (key[i] != undefined) {
+            data[key[i]].son.forEach((element) => {
+              if (element.id == item.parent_id) {
+                item.rname = element.commentator_name;
+                data[key[i]].son.push(item);
+              }
+            });
+          }
+        }
+      } else {
+        // 2 级评论
+        data[key[item.parent_id]].son.push(item);
+      }
+    }
+  });
+  /**
+   * 时间复杂度
+   * a 是 1 级评论最后一位索引
+   * 最优：n + (n - a)
+   * b 是 2 级评论最后一位索引
+   * 最坏：n + ((n - a) - b) * a
+   */
+  return data;
+}
 app.get("/addComment", function (req, res) {
   const r = obEmpty();
-  if (req.query.rid != parseInt(req.query.commentator_id)) {
-    sendMsg(
-      parseInt(req.query.rid),
-      req.query.content,
-      req.query.rname,
-      req.query.commentator_head_url,
-      req.query.contentUrl
-    );
-  }
-  res.send("success");
-  // connection.query(
-  //   "call proc_commentByInsert(?,?,?,?,?,?,?)",
-  //   [
-  //     req.query.new_id,
+  // if (req.query.rid != parseInt(req.query.commentator_id)) {
+  //   sendMsg(
+  //     parseInt(req.query.rid),
   //     req.query.content,
-  //     req.query.create_time,
-  //     req.query.commentator_id,
-  //     req.query.commentator_name,
+  //     req.query.rname,
   //     req.query.commentator_head_url,
-  //     req.query.parent_id,
-  //   ],
-  //   function (error, result) {
-  //     if (error) throw error;
-  //     else {
-  //       r.msg = "success";
-  //       r.data = "";
-  //       res.send(r);
-  //       if (req.query.rid != parseInt(req.query.commentator_id)) {
-  //         sendMsg(
-  //           parseInt(req.query.rid),
-  //           req.query.content,
-  //           req.query.rname,
-  //           req.query.headUrl,
-  //           req.query.contentUrl
-  //         );
-  //       }
-  //     }
-  //   }
-  // );
+  //     req.query.contentUrl
+  //   );
+  // }
+  // res.send("success");
+  "call proc_commentByInsert(?,?,?,?,?,?,?)"
+  connection.query(
+    "insert into comment(new_id,content,create_time,commentator_id,commentator_name,commentator_head_url,parent_id) values(?,?,?,?,?,?,?)",
+    [
+      req.query.new_id,
+      req.query.content,
+      req.query.create_time,
+      req.query.commentator_id,
+      req.query.commentator_name,
+      req.query.commentator_head_url,
+      req.query.parent_id,
+    ],
+    function (error, result) {
+      if (error) throw error;
+      else {
+        r.msg = "success";
+        r.data = result.insertId;
+        res.send(r);
+        // if (req.query.rid != parseInt(req.query.commentator_id)) {
+        //   sendMsg(
+        //     parseInt(req.query.rid),
+        //     req.query.content,
+        //     req.query.rname,
+        //     req.query.headUrl,
+        //     req.query.contentUrl
+        //   );
+        // }
+      }
+    }
+  );
 });
 function obEmpty() {
   return {
