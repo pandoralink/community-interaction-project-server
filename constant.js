@@ -17,34 +17,42 @@ const templateStart = `
       <div class="main">
 `;
 const templateEnd = `
-      </div>
       <div class="footer">
+        <div class="footer-info">全部评论</div>
         <div class="comment">
-          <!-- <post-comment> 一定要和 <message> 解耦，不能相互嵌套！ -->
           <post-comment
+            ref="comment"
             @add="addMessage"
+            @reply="replyArticle"
+            @cancel="cancel"
             :remote-base-url="remoteBaseUrl"
-            :new-id="newId"
-            :commentator-id="userId"
+            :new-id="parseInt(newId)"
+            :commentator-id="parseInt(userId)"
             :commentator-name="userName"
             :commentator-head-url="userHeadUrl"
+            :rid="parseInt(currentReplyId)"
+            :rname="currentReplyUserName"
+            :content-url="articleUrl"
+            placeholder="回复文章"
           ></post-comment>
           <div class="main">
             <message
               v-for="(item,index) in list"
               :key="index"
-              :id="item.comment_id"
+              :id="item.id"
               :content="item.content"
               :create-time="item.create_time"
               :son="item.son"
-              :remote-base-url="remoteBaseUrl"
+              :uid="item.commentator_id"
               :name="item.commentator_name"
               :head-url="item.commentator_head_url"
-              :new-id="newId"
-              :commentator-id="userId"
-              :commentator-name="userName"
-              :commentator-head-url="userHeadUrl"
+              @add="reply"
+              first
             ></message>
+            <div
+              alt="空块，避免回复框挡住评论"
+              style="width: 100%; height: 60px"
+            ></div>
           </div>
         </div>
       </div>
@@ -53,21 +61,29 @@ const templateEnd = `
 
   <script src="./lib/vue@3.2.6/vue.global.prod.js"></script>
   <script src="./lib/axios@0.21.1.js"></script>
+  <script src="./lib/dayjs.min.js"></script>
   <script type="module">
     import config from "./lib/config.js";
     import Message from "./comment/Message.js";
     import PostComment from "./comment/PostComment.js";
+    /**
+     * currentReplyId 是当前回复的 <message> 在 comment 表中的 id
+     * currentChildArr 是当前回复的 <message> 的 son: Array
+     */
     const article = {
       data() {
         return {
-          headUrl: config.defaultHeadBaseUrl + "default_head.png",
-          followStatus: false,
           userName: "",
           remoteBaseUrl: "",
-          list: "",
-          newId: "",
-          userId: "",
+          list: [],
+          newId: 0,
+          userId: 0,
           userHeadUrl: "",
+          replayUserFlag: false,
+          currentReplyId: 0,
+          currentChildArr: [],
+          currentReplyUserName: "",
+          articleUrl: "",
         };
       },
       created() {
@@ -76,60 +92,70 @@ const templateEnd = `
       },
       methods: {
         initData() {
-          this.userName = localStorage.getItem("userName")
-            ? localStorage.getItem("userName")
+          this.userName = config.getQueryVariable("userName")
+            ? config.getQueryVariable("userName")
             : null;
-          this.userId = localStorage.getItem("userId")
-            ? localStorage.getItem("userId")
+          this.userId = config.getQueryVariable("userId")
+            ? config.getQueryVariable("userId")
             : null;
-          this.userHeadUrl = localStorage.getItem("userHeadUrl")
-            ? localStorage.getItem("userHeadUrl")
+          this.userHeadUrl = config.getQueryVariable("userHeadUrl")
+            ? config.getQueryVariable("userHeadUrl")
             : "";
-          this.newId = localStorage.getItem("newId")
-            ? localStorage.getItem("newId")
+          this.newId = config.getQueryVariable("newId")
+            ? config.getQueryVariable("newId")
             : null;
+          this.articleUrl = window.location.href.split("?")[0];
+          console.log(this.articleUrl);
           this.remoteBaseUrl = config.baseUrl ? config.baseUrl : "";
         },
         initCommentData() {
           axios
             .get(config.baseUrl + "/getCommentData" + "?new_id=" + this.newId)
             .then((res) => {
-              let content = res.data.data;
-              content.forEach((item, index) => {
-                content[index].son = [];
-              });
-              let data = [];
-              let key = [];
-              let index = 0;
-              content.forEach((item) => {
-                if (item.parent_id == 0) {
-                  data.push(item);
-                  console.log(item.comment_id);
-                  key[item.comment_id] = index;
-                  index++;
-                } else {
-                  console.log(item.parent_id,key[1]);
-                  if (key[item.parent_id] == undefined) {
-                    for (let i = 0; i < key.length; i++) {
-                      if (key[i] != undefined) {
-                        data[key[i]].son.forEach((element) => {
-                          if (element.comment_id == item.parent_id)
-                            data[key[i]].son.push(item);
-                        });
-                      }
-                    }
-                  } else data[key[item.parent_id]].son.push(item);
-                }
-              });
-              this.list = data;
-              this.flag = true;
+              this.list = res.data.data;
             })
             .catch((err) => {
               console.log(err);
             });
         },
         addMessage(e) {
-          this.list.push(e);
+          if (e.parent_id == 0) this.list.push(e);
+          else {
+            e.rname = this.currentReplyUserName;
+            this.currentChildArr.push(e);
+          }
+          this.currentReplyId = 0;
+          this.$refs.comment.content = "";
+        },
+        reply(e) {
+          this.$refs.comment.content = "";
+          this.replayUserFlag = true;
+          this.currentChildArr = e.arr;
+          this.currentReplyId = e.id;
+          this.currentReplyUserName = e.name;
+          const commentTextAreaDom = this.$refs.comment.$el.querySelector(
+            "textarea"
+          );
+          commentTextAreaDom.select();
+          commentTextAreaDom.placeholder = "回复" + e.name;
+        },
+        replyArticle() {
+          if (!this.replayUserFlag) {
+            this.postCommentEmpty();
+            this.$refs.comment.$el.querySelector("textarea").placeholder =
+              "回复文章";
+          }
+        },
+        cancel() {
+          this.replayUserFlag = false;
+          // 操作 Dom 元素是因为修改直接修改 placeholder 元素更新失败
+          this.$refs.comment.$el.querySelector("textarea").placeholder =
+            "回复文章";
+        },
+        postCommentEmpty() {
+          this.currentChildArr = [];
+          this.currentReplyUserName = "";
+          this.currentReplyId = 0;
         },
       },
     };
