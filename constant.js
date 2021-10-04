@@ -17,6 +17,7 @@ const templateStart = `
       <div class="main">
 `;
 const templateEnd = `
+      </div>
       <div class="footer">
         <div class="footer-info">全部评论</div>
         <div class="comment">
@@ -177,6 +178,8 @@ config.line = function line(d) {
   }
   return data;
 };
+config.remoteFileDefaultPath = "../News/";
+config.localFileDefaultPath = "./html/";
 config.loadJSON = function loadJSON(d) {
   for (let i = 0; i < d.length; i++) d[i] = JSON.parse(d[i]);
   return d;

@@ -1,5 +1,8 @@
 var express = require("express");
+var fs = require("fs");
 var mysql = require("mysql");
+var HTMLParser = require("node-html-parser");
+const config = require("./constant");
 var connection = mysql.createConnection({
   host: "",
   user: "",
@@ -150,7 +153,7 @@ function dataConvert(d) {
   const data = [];
   const key = [];
   let index = 0;
-  content.forEach(item => {
+  content.forEach((item) => {
     if (item.parent_id == 0) {
       data.push(item);
       key[item.id] = index;
@@ -195,7 +198,7 @@ app.get("/addComment", function (req, res) {
   //   );
   // }
   // res.send("success");
-  "call proc_commentByInsert(?,?,?,?,?,?,?)"
+  ("call proc_commentByInsert(?,?,?,?,?,?,?)");
   connection.query(
     "insert into comment(new_id,content,create_time,commentator_id,commentator_name,commentator_head_url,parent_id) values(?,?,?,?,?,?,?)",
     [
@@ -225,6 +228,59 @@ app.get("/addComment", function (req, res) {
       }
     }
   );
+});
+app.get("/addArticle", function (req, res) {
+  let { uid, title, coverUrl, html } = req.query;
+  let sql = "select max(new_id) from new";
+  connection.query(sql, function (error, results) {
+    if (error) throw error;
+    let fileName =
+      config.localFileDefaultPath + results[0]["max(new_id)"] + ".html";
+    console.log(fileName);
+    let template = config.templateStart + html + config.templateEnd;
+    fs.writeFile(fileName, template, (err) => {
+      if (err) console.error(err);
+    });
+    let user_id = uid;
+    sql = "call proc_newByInsert(?,?,?)";
+    connection.query(
+      sql,
+      [user_id, coverUrl, title],
+      function (error, results) {
+        if (error) throw error;
+      }
+    );
+  });
+});
+app.get("/updateArticle", function (req, res) {
+  // 对象模型解构属性名称需相同
+  let { title, articleName, coverUrl, aid, html } = req.query;
+  // 可以对 articleName 作一定校验
+  articleName = config.remoteFileDefaultPath + articleName;
+  fs.readFile(articleName, (err, data) => {
+    if (err) console.error(err);
+    const root = HTMLParser.parse(data.toString());
+    root.querySelector(".main").innerHTML = html;
+    fs.writeFile(articleName, root.innerHTML, (err) => {
+      if (err) console.error(err);
+    });
+  });
+  const sql = "UPDATE new SET new_name = ? WHERE new_id = ?;";
+  connection.query(sql, [title, aid], function (error, results) {
+    if (error) throw error;
+  });
+});
+app.get("/getArticleHtml", function (req, res) {
+  let { articleName } = req.query;
+  articleName = config.remoteFileDefaultPath + articleName;
+  fs.readFile(articleName, (err, data) => {
+    if (err) console.error(err);
+    const root = HTMLParser.parse(data.toString());
+    const d = {
+      content: root.querySelector(".main").innerHTML,
+    };
+    res.send(d);
+  });
 });
 function obEmpty() {
   return {
