@@ -272,7 +272,7 @@ app.get("/updateArticle", function (req, res) {
 });
 app.get("/getArticleHtml", function (req, res) {
   let { articleName } = req.query;
-  articleName = config.remoteFileDefaultPath + articleName;
+  articleName = config.localFileDefaultPath + articleName;
   fs.readFile(articleName, (err, data) => {
     if (err) console.error(err);
     const root = HTMLParser.parse(data.toString());
@@ -297,39 +297,74 @@ function sendMsg(id, content, name, headUrl, contentUrl) {
     headUrl: headUrl,
     contentUrl: contentUrl,
   };
+  const clientManager = map.get(id.toString());
+  if (clientManager && clientManager.client) {
+    /**
+     * 客户端存在且活跃，直接发送消息
+     * 并置空 msgs 消息队列
+     */
+    clientManager.msgs = [];
+    clientManager.client.send([msg]);
+  }
+  else if (clientManager && !clientManager.client) {
+    /**
+     * 客户端存在且不活跃
+     * 缓存消息到 msgs 消息队列
+     */
+    clientManager.msgs.push(msg);
+  }
+  else {
+    // 客户端不存在
+    map.set(id.toString(), wsMsgTemplate(null, [msg]));
+  }
   console.log(JSON.stringify(msg));
-  wss.clients.forEach((item) => {
-    if (item.id == id - 0) {
-      item.send(JSON.stringify(msg));
-    }
-  });
+}
+function wsMsgTemplate(ws, arr = []) {
+  return {
+    client: ws,
+    msgs: arr,
+  }
 }
 var WebSocketServer = require("ws").Server;
-let clients = []; //存所有连接上的用户
 wss = new WebSocketServer({ port: 8181 }); //服务端口8181
-wss.on("connection", function (ws) {
-  console.log("服务端：客户端已连接");
-  ws.on("message", function (message) {
-    //打印客户端监听的消息
-    console.log(message);
-    //每个客户端都存上自己发来的phone做为唯一的id
-    ws.id = message - 0;
-    //连接上后就压进数组
-    let flag = false;
-    clients.forEach((item) => {
-      if (item.id == ws.id) {
-        flag = true;
-      }
+// map 保证 userId 唯一
+const map = new Map();
+wss.on("connection", function (ws, req) {
+  // "/?id=1005" <=> 1005
+  try {
+    const id = req.url.split("?")[1].split("=")[1];
+    console.log(`服务端：user: ${id} 已连接`);
+    const clientManager = map.get(id.toString());
+    if (clientManager && clientManager.client) {
+      /**
+       * 客户端断开连接并且没
+       * 有关闭 ws 连接
+       */
+      clientManager.client = ws;
+      clientManager.msgs = [];
+    }
+    else if (clientManager && !clientManager.client) {
+      /**
+       * 客户端存在且不活跃
+       * 初始化客户端并发送缓存消息
+       */
+       clientManager.client = ws;
+      clientManager.client.send(clientManager.msgs);
+    }
+    else {
+      // 客户端不存在
+      map.set(id.toString(), wsMsgTemplate(ws));
+    }
+    ws.on("message", function (message) {
     });
-    if (!flag) clients.push(ws);
-    console.log(clients.toString());
-  });
-  ws.on("close", (msg) => {
-    clients = clients.filter((item) => {
-      return item.id != ws.id;
+    ws.on("close", (msg) => {
+      map.delete(id.toString());
+      console.log(`与前端 ${id} 断开连接`);
     });
-    console.log("与前端断开连接", clients.toString());
-  });
+  } catch (err) {
+    console.log(err);
+    ws.close();
+  }
 });
 
 var server = app.listen(3000, function () {
