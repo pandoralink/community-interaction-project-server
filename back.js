@@ -188,16 +188,6 @@ function dataConvert(d) {
 }
 app.get("/addComment", function (req, res) {
   const r = obEmpty();
-  // if (req.query.rid != parseInt(req.query.commentator_id)) {
-  //   sendMsg(
-  //     parseInt(req.query.rid),
-  //     req.query.content,
-  //     req.query.rname,
-  //     req.query.commentator_head_url,
-  //     req.query.contentUrl
-  //   );
-  // }
-  // res.send("success");
   ("call proc_commentByInsert(?,?,?,?,?,?,?)");
   connection.query(
     "insert into comment(new_id,content,create_time,commentator_id,commentator_name,commentator_head_url,parent_id) values(?,?,?,?,?,?,?)",
@@ -216,15 +206,15 @@ app.get("/addComment", function (req, res) {
         r.msg = "success";
         r.data = result.insertId;
         res.send(r);
-        // if (req.query.rid != parseInt(req.query.commentator_id)) {
-        //   sendMsg(
-        //     parseInt(req.query.rid),
-        //     req.query.content,
-        //     req.query.rname,
-        //     req.query.headUrl,
-        //     req.query.contentUrl
-        //   );
-        // }
+        if (req.query.rid != parseInt(req.query.commentator_id)) {
+          sendMsg(
+            parseInt(req.query.rid),
+            req.query.content,
+            req.query.rname,
+            req.query.headUrl,
+            req.query.contentUrl
+          );
+        }
       }
     }
   );
@@ -332,6 +322,7 @@ const map = new Map();
 wss.on("connection", function (ws, req) {
   // "/?id=1005" <=> 1005
   try {
+    // 需要对 id 进行校验
     const id = req.url.split("?")[1].split("=")[1];
     console.log(`服务端：user: ${id} 已连接`);
     const clientManager = map.get(id.toString());
