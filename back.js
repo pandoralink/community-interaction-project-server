@@ -188,7 +188,6 @@ function dataConvert(d) {
 }
 app.get("/addComment", function (req, res) {
   const r = obEmpty();
-  ("call proc_commentByInsert(?,?,?,?,?,?,?)");
   connection.query(
     "insert into comment(new_id,content,create_time,commentator_id,commentator_name,commentator_head_url,parent_id) values(?,?,?,?,?,?,?)",
     [
@@ -203,21 +202,66 @@ app.get("/addComment", function (req, res) {
     function (error, result) {
       if (error) throw error;
       else {
+        if (req.query.rid != parseInt(req.query.commentator_id)) {
+          // parent_id = 0 是回复文章
+          // parent_id != 0 是回复其他人
+          if (req.query.parent_id === 0) {
+            notifyAuthor(
+              parseInt(req.query.rid),
+              req.query.content,
+              req.query.commentator_name,
+              req.query.commentator_head_url,
+              req.query.contentUrl,
+              req.query.new_id
+            );
+          } else {
+            notifyUser(
+              parseInt(req.query.rid),
+              req.query.content,
+              req.query.commentator_name,
+              req.query.commentator_head_url,
+              req.query.contentUrl,
+              req.query.new_id
+            );
+          }
+        }
+
         r.msg = "success";
         r.data = result.insertId;
         res.send(r);
-        if (req.query.rid != parseInt(req.query.commentator_id)) {
-          sendMsg(
-            parseInt(req.query.rid),
-            req.query.content,
-            req.query.rname,
-            req.query.headUrl,
-            req.query.contentUrl
-          );
-        }
       }
     }
   );
+});
+/**
+ * 通知作者有人回复
+ */
+function notifyAuthor(id, content, name, headUrl, contentUrl, aid) {
+  connection.query(
+    "select new_owner_id as aid from new where new_id = ?",
+    [newId],
+    function (err, result) {
+      sendMsg(parseInt(result[0].aid), content, name, headUrl, contentUrl, aid);
+    }
+  );
+}
+/**
+ * 通知用户有人回复
+ */
+function notifyUser(id, content, name, headUrl, contentUrl, aid) {
+  sendMsg(parseInt(id), content, name, headUrl, contentUrl, aid);
+}
+
+/**
+ * 创作模块接口
+ */
+app.get("/getUserArticles", function (req, res) {
+  const { userId } = req.query;
+  const sql = "select * from new WHERE new_owner_id = ?;";
+  connection.query(sql, [userId], function (error, results) {
+    if (error) throw error;
+    res.send(results);
+  });
 });
 app.get("/addArticle", function (req, res) {
   let { uid, title, coverUrl, html } = req.query;
@@ -242,9 +286,25 @@ app.get("/addArticle", function (req, res) {
     );
   });
 });
+/**
+ * 只在数据库层面删除了
+ * 文章，服务器存储中并
+ * 没有删除
+ */
+app.get("/deleteUserArticle", function (req, res) {
+  const { userId, aid } = req.query;
+  const sql = "call proc_articleByDelete(?,?);";
+  connection.query(sql, [aid, userId], function (error, results) {
+    if (error) {
+      res.send("failure");
+      throw error;
+    }
+    res.send("success");
+  });
+});
 app.get("/updateArticle", function (req, res) {
   // 对象模型解构属性名称需相同
-  let { title, articleName, coverUrl, aid, html } = req.query;
+  let { title, articleName, aid, html } = req.query;
   // 可以对 articleName 作一定校验
   articleName = config.remoteFileDefaultPath + articleName;
   fs.readFile(articleName, (err, data) => {
@@ -272,6 +332,23 @@ app.get("/getArticleHtml", function (req, res) {
     res.send(d);
   });
 });
+
+app.get("/getAuthorId", function (req, res) {
+  const { newId } = req.query;
+  const sql = "select * from new WHERE new_id = ?;";
+  connection.query(sql, [newId], function (error, result) {
+    if (error) throw error;
+    res.send(result[0]);
+  });
+});
+app.get("/getAuthorInfo", function (req, res) {
+  const { authorId } = req.query;
+  const sql = "select * from user WHERE user_id = ?;";
+  connection.query(sql, [authorId], function (error, results) {
+    if (error) throw error;
+    res.send(results[0]);
+  });
+});
 function obEmpty() {
   return {
     code: "",
@@ -279,13 +356,14 @@ function obEmpty() {
     data: "",
   };
 }
-function sendMsg(id, content, name, headUrl, contentUrl) {
+function sendMsg(id, content, name, headUrl, contentUrl, aid) {
   const msg = {
     id: id,
     content: content,
     name: name,
     headUrl: headUrl,
     contentUrl: contentUrl,
+    aid: aid,
   };
   const clientManager = map.get(id.toString());
   if (clientManager && clientManager.client) {
@@ -295,15 +373,13 @@ function sendMsg(id, content, name, headUrl, contentUrl) {
      */
     clientManager.msgs = [];
     clientManager.client.send([msg]);
-  }
-  else if (clientManager && !clientManager.client) {
+  } else if (clientManager && !clientManager.client) {
     /**
      * 客户端存在且不活跃
      * 缓存消息到 msgs 消息队列
      */
     clientManager.msgs.push(msg);
-  }
-  else {
+  } else {
     // 客户端不存在
     map.set(id.toString(), wsMsgTemplate(null, [msg]));
   }
@@ -313,7 +389,7 @@ function wsMsgTemplate(ws, arr = []) {
   return {
     client: ws,
     msgs: arr,
-  }
+  };
 }
 var WebSocketServer = require("ws").Server;
 wss = new WebSocketServer({ port: 8181 }); //服务端口8181
@@ -333,21 +409,18 @@ wss.on("connection", function (ws, req) {
        */
       clientManager.client = ws;
       clientManager.msgs = [];
-    }
-    else if (clientManager && !clientManager.client) {
+    } else if (clientManager && !clientManager.client) {
       /**
        * 客户端存在且不活跃
        * 初始化客户端并发送缓存消息
        */
-       clientManager.client = ws;
+      clientManager.client = ws;
       clientManager.client.send(clientManager.msgs);
-    }
-    else {
+    } else {
       // 客户端不存在
       map.set(id.toString(), wsMsgTemplate(ws));
     }
-    ws.on("message", function (message) {
-    });
+    ws.on("message", function (message) {});
     ws.on("close", (msg) => {
       map.delete(id.toString());
       console.log(`与前端 ${id} 断开连接`);
@@ -356,6 +429,9 @@ wss.on("connection", function (ws, req) {
     console.log(err);
     ws.close();
   }
+});
+app.get("/getClients", function (req, res) {
+  res.send(Array.from(map));
 });
 
 var server = app.listen(3000, function () {

@@ -1,0 +1,121 @@
+public class HbaseUtil {
+	public static Configuration configuration;
+	public static Connection connection;
+	public static Admin admin;
+  ...
+  private static void echoTableData(List<Result> results) {
+		for (Result result : results) {
+			Cell[] cells = result.rawCells();
+			for (Cell cell : cells) {
+				System.out.println("RowName（行键）:" + new String(CellUtil.cloneRow(cell)) + " ");
+				System.out.println("Timetamp（时间戳）:" + cell.getTimestamp() + " ");
+				System.out.println("column Family（列簇）:" + new String(CellUtil.cloneFamily(cell)) + " ");
+				System.out.println("column Name（列名）:" + new String(CellUtil.cloneQualifier(cell)) + " ");
+				System.out.println("value:（值）" + new String(CellUtil.cloneValue(cell)) + " ");
+				System.out.println("\n");
+			}
+		}
+	}
+
+  private static List<String> getTableInfo() throws IOException {
+		List names = new ArrayList<>();
+		HTableDescriptor[] hTableDescriptor = admin.listTables();
+		for (HTableDescriptor h : hTableDescriptor) {
+			names.add(h.getNameAsString());
+		}
+		return names;
+	}
+
+  private static List<Result> getTableData(String tableName) throws IOException {
+		List<Result> results = new ArrayList<>();
+		Table table = connection.getTable(TableName.valueOf(tableName));
+		Scan scan = new Scan();
+		ResultScanner scanner = table.getScanner(scan);
+		for (Result result : scanner) {
+			results.add(result);
+		}
+		table.close();
+
+		return results;
+	}
+
+  private static void addColumn(String tableName, String columnName) throws IOException {
+		TableName tbN = TableName.valueOf(tableName);
+		HColumnDescriptor hCloumnDescriptor = new HColumnDescriptor(columnName);
+		admin.disableTable(tbN);
+		admin.addColumn(tbN, hCloumnDescriptor);
+		admin.enableTable(tbN);
+	}
+
+	private static void deleteColumn(String tableName, String column) throws IOException {
+		TableName tbN = TableName.valueOf(tableName);
+		admin.deleteColumn(tbN, column.getBytes("UTF-8"));
+	}
+
+  private static void clearTableData(String tableName) throws IOException {
+		List<String> rowKeyList = new ArrayList<>();
+		List<Result> results = getTableData(tableName);
+		for (Result result : results) {
+			rowKeyList.add(Bytes.toString(result.getRow()));
+		}
+		for (String rowkey : rowKeyList) {
+			deleteRow(tableName, rowkey);
+		}
+	}
+
+	public static void createTable(String tableName, String[] fields) throws IOException {
+		TableName tbName = TableName.valueOf(tableName);
+		if (admin.tableExists(tbName)) {
+			admin.disableTable(tbName);
+			admin.deleteTable(tbName);
+		} else {
+			TableDescriptorBuilder tableDescriptor = TableDescriptorBuilder.newBuilder(tbName);
+			for (String str : fields) {
+				ColumnFamilyDescriptor family = ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(str)).build();
+				tableDescriptor.setColumnFamily(family);
+			}
+			admin.createTable(tableDescriptor.build());
+		}
+	}
+
+	public static void addRecord(String tableName, String row, String[] fields, String[] values) throws IOException {
+		Table table = connection.getTable(TableName.valueOf(tableName));
+
+		for (int i = 0; i < fields.length; i++) {
+			Put put = new Put(row.getBytes());
+			String[] cols = fields[i].split(":");
+			if (cols.length == 1) {
+				// column value
+				put.addColumn(cols[0].getBytes(), "".getBytes(), values[i].getBytes());
+			} else {
+				// columnFamily:column value
+				put.addColumn(cols[0].getBytes(), cols[1].getBytes(), values[i].getBytes());
+			}
+			table.put(put);
+		}
+		table.close();
+	}
+
+	public static void modifyData(String tableName, String row, String column, String value) throws IOException {
+		Table table = connection.getTable(TableName.valueOf(tableName));
+		Put put = new Put(row.getBytes());
+		String[] cols = column.split(":");
+		if (cols.length == 1) {
+			// column value
+			put.addColumn(column.getBytes(), "".getBytes(), value.getBytes());
+		} else {
+			// columnFamily:column value
+			put.addColumn(cols[0].getBytes(), cols[1].getBytes(), value.getBytes());
+		}
+		table.put(put);
+		table.close();
+	}
+
+	public static void deleteRow(String tableName, String row) throws IOException {
+		Table table = connection.getTable(TableName.valueOf(tableName));
+		Delete delete = new Delete(row.getBytes());
+		table.delete(delete);
+		table.close();
+	}
+  ...
+}

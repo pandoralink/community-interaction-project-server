@@ -19,7 +19,7 @@ const templateStart = `
 const templateEnd = `
       </div>
       <div class="footer">
-        <div class="footer-info">全部评论</div>
+        <span class="footer-info">全部评论</span>
         <div class="comment">
           <post-comment
             ref="comment"
@@ -31,7 +31,8 @@ const templateEnd = `
             :commentator-id="parseInt(userId)"
             :commentator-name="userName"
             :commentator-head-url="userHeadUrl"
-            :rid="parseInt(currentReplyId)"
+            :rid="parseInt(currentReplyUserId)"
+            :pid="parseInt(currentReplyId)"
             :rname="currentReplyUserName"
             :content-url="articleUrl"
             placeholder="回复文章"
@@ -70,6 +71,7 @@ const templateEnd = `
     /**
      * currentReplyId 是当前回复的 <message> 在 comment 表中的 id
      * currentChildArr 是当前回复的 <message> 的 son: Array
+     * currentReplyUserId 是当前回复的 <message> 的用户 id
      */
     const article = {
       data() {
@@ -82,6 +84,7 @@ const templateEnd = `
           userHeadUrl: "",
           replayUserFlag: false,
           currentReplyId: 0,
+          currentReplyUserId: 0,
           currentChildArr: [],
           currentReplyUserName: "",
           articleUrl: "",
@@ -94,7 +97,7 @@ const templateEnd = `
       methods: {
         initData() {
           this.userName = config.getQueryVariable("userName")
-            ? config.getQueryVariable("userName")
+            ? decodeURI(config.getQueryVariable("userName"))
             : null;
           this.userId = config.getQueryVariable("userId")
             ? config.getQueryVariable("userId")
@@ -133,6 +136,7 @@ const templateEnd = `
           this.replayUserFlag = true;
           this.currentChildArr = e.arr;
           this.currentReplyId = e.id;
+          this.currentReplyUserId = e.uid;
           this.currentReplyUserName = e.name;
           const commentTextAreaDom = this.$refs.comment.$el.querySelector(
             "textarea"
@@ -154,7 +158,9 @@ const templateEnd = `
             "回复文章";
         },
         postCommentEmpty() {
+          // 重置 <post-comment> 中相应数据
           this.currentChildArr = [];
+          this.currentReplyUserId = 0;
           this.currentReplyUserName = "";
           this.currentReplyId = 0;
         },
