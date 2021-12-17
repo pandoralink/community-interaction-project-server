@@ -27,6 +27,13 @@ let resultTemplate = {
   msg: "",
   data: "",
 };
+// result 类
+
+function Result(code, msg, data) {
+  this.code = code;
+  this.msg = msg;
+  this.data = data;
+}
 
 app.get("/new", function (req, res) {
   const offset = req.query.offset ? parseInt(req.query.offset) : 0;
@@ -75,28 +82,37 @@ app.get("/fan", function (req, res) {
 app.get("/authorInfo", function (req, res) {
   const fanId = req.query.fan_id;
   const authorId = req.query.blogger_id;
-  const r = obEmpty();
-  connection.query(
-    "select * from fans where blogger_id = ? and fan_id = ?;",
-    [authorId, fanId],
-    function (error, result) {
-      if (error) throw error;
-      // 结果基类一定要初始化置空
-      r.code = 200;
-      r.msg = "success";
-      r.data = {};
-      r.data.relate = result.length ? true : false;
+  const promise = new Promise((resolve, reject) => {
+    connection.query(
+      "select * from fans where blogger_id = ? and fan_id = ?;",
+      [authorId, fanId],
+      function (error, result) {
+        if (error) reject(error);
+        resolve(result.length ? true : false);
+      }
+    );
+  });
+
+  promise
+    .then((relate) => {
       connection.query(
         "select count(*) as total from fans where blogger_id = ?;",
         [authorId],
         function (error, result) {
           if (error) throw error;
-          r.data.fanTotal = result[0].total;
-          res.send(r);
+          res.send(
+            new Result(200, "success", {
+              relate: relate,
+              fanTotal: result[0].total,
+            })
+          );
         }
       );
-    }
-  );
+    })
+    .catch((err) => {
+      console.error("服务器出错了" + err);
+      res.send(new Result(200, "查询失败"));
+    });
 });
 app.get("/addFollow", function (req, res) {
   const authorId = req.query.blogger_id;
