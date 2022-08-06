@@ -318,23 +318,39 @@ app.get("/deleteUserArticle", function (req, res) {
     res.send("success");
   });
 });
+
 app.get("/updateArticle", function (req, res) {
   // 对象模型解构属性名称需相同
   let { title, articleName, aid, html } = req.query;
   // 可以对 articleName 作一定校验
-  articleName = config.remoteFileDefaultPath + articleName;
-  fs.readFile(articleName, (err, data) => {
-    if (err) console.error(err);
-    const root = HTMLParser.parse(data.toString());
-    root.querySelector(".main").innerHTML = html;
-    fs.writeFile(articleName, root.innerHTML, (err) => {
-      if (err) console.error(err);
+  articleName = config.localFileDefaultPath + articleName;
+
+  const promise = new Promise((resolve, reject) => {
+    fs.readFile(articleName, (err, data) => {
+      if (err) reject(err);
+      const root = HTMLParser.parse(data.toString());
+      root.querySelector(".main").innerHTML = html;
+      resolve(root.innerHTML);
     });
   });
-  const sql = "UPDATE new SET new_name = ? WHERE new_id = ?;";
-  connection.query(sql, [title, aid], function (error, results) {
-    if (error) throw error;
-  });
+
+  promise
+    .then((htmlContent) => {
+      fs.writeFile(articleName, htmlContent, (err) => {
+        if (err) throw err;
+      });
+    })
+    .then(() => {
+      const sql = "UPDATE new SET new_name = ? WHERE new_id = ?;";
+      connection.query(sql, [title, aid], function (error, results) {
+        if (error) throw error;
+        res.send(new Result(200, "更新成功"));
+      });
+    })
+    .catch((err) => {
+      console.error("服务器出错了" + err);
+      res.send(new Result(200, "查询失败"));
+    });
 });
 app.get("/getArticleHtml", function (req, res) {
   let { articleName } = req.query;
