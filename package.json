@@ -4,11 +4,13 @@
   "description": "",
   "main": "back.js",
   "scripts": {
+    "server": "node -r dotenv/config temp.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "poplink",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.0.1",
     "express.js": "^1.0.0",
     "mysql": "^2.18.1",
     "node-html-parser": "^5.3.3",

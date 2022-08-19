@@ -4,11 +4,11 @@ var mysql = require("mysql");
 var HTMLParser = require("node-html-parser");
 const config = require("./constant");
 var connection = mysql.createConnection({
-  host: "",
-  user: "",
-  password: "",
-  port: "",
-  database: "",
+  host: process.env.HOST,
+  user: process.env.USER,
+  password: process.env.PASSWORD,
+  port: process.env.PORT,
+  database: process.env.DATABASE,
 });
 
 connection.connect();
