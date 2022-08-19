@@ -4,7 +4,7 @@
   "description": "",
   "main": "back.js",
   "scripts": {
-    "server": "node -r dotenv/config temp.js",
+    "server": "node -r dotenv/config back.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "poplink",
