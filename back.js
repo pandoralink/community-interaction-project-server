@@ -49,6 +49,28 @@ app.get("/new", function (req, res) {
     }
   );
 });
+
+app.get("/getArticleDetail", function (req, res) {
+  const { aid } = req.query;
+  connection.query(
+    "select * from new where new_id = ?;",
+    [aid],
+    function (error, result) {
+      if (error) {
+        console.log(error);
+      }
+      try {
+        resultTemplate.code = 200;
+        resultTemplate.msg = "success";
+        resultTemplate.data = result && result.length && result.length > 0 && result[0];
+        res.send(resultTemplate);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  );
+});
+
 app.get("/userArticle", function (req, res) {
   connection.query(
     "select * from new join (select user_id,user_name,user_account,user_head from user where user_account = ?) as u on new_owner_id = u.user_id;",
@@ -145,6 +167,8 @@ app.get("/cancelFollow", function (req, res) {
   );
 });
 app.get("/getCommentData", function (req, res) {
+  // resultTemplate.data = testData();
+  // res.send(resultTemplate);
   connection.query(
     "select * from comment where new_id = ?",
     [req.query.new_id],
@@ -155,6 +179,39 @@ app.get("/getCommentData", function (req, res) {
     }
   );
 });
+function testData() {
+  function Comment(id) {
+    this.commentator_head_url = "";
+    this.commentator_id = 0;
+    this.commentator_name = "test";
+    this.content = "test";
+    this.create_time = "2021-09-04T09:33:12.000Z";
+    this.id = id;
+    this.new_id = 0;
+    this.parent_id = 0;
+    this.son = [];
+  }
+  const res = [];
+  for (let i = 0; i < 10000; i++) {
+    res.push(new Comment(i));
+  }
+  // for(let i = 0; i < 10; i++) {
+  //   const currComment = new Comment(parseInt("" + i));
+  //   const secondComment = [];
+  //   for(let j = 0; j < 10; j++) {
+  //     const currComment = new Comment(parseInt("" + i + j));
+  //     const threeComment = [];
+  //     for(let k = 0; k < 10; k++) {
+  //       threeComment.push(new Comment(parseInt("" + i + j + k)));
+  //     }
+  //     currComment.son = threeComment;
+  //     secondComment.push(currComment);
+  //   }
+  //   currComment.son = secondComment;
+  //   res.push(currComment);
+  // }
+  return res;
+}
 function dataConvert(d) {
   /**
    * dataConvert 为传入的 comment 表数据
@@ -466,8 +523,8 @@ app.get("/getClients", function (req, res) {
   res.send(Array.from(map));
 });
 
-var server = app.listen(3000, function () {
-  console.log("runing 3000...");
+var server = app.listen(3001, function () {
+  console.log("runing 3001...");
 });
 
 connection.end;

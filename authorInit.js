@@ -1,11 +1,11 @@
 var mysql = require("mysql");
 var fs = require("fs");
-var connection = mysql.createConnection({
-  host: "116.63.152.202",
-  user: "poplink",
-  password: "1900301125",
-  port: "3306",
-  database: "examdb",
+const connection = mysql.createConnection({
+  host: process.env.HOST,
+  user: process.env.USER,
+  password: process.env.PASSWORD,
+  port: process.env.PORT,
+  database: process.env.DATABASE,
 });
 
 connection.connect();
