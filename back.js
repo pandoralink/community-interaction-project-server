@@ -167,8 +167,6 @@ app.get("/cancelFollow", function (req, res) {
   );
 });
 app.get("/getCommentData", function (req, res) {
-  // resultTemplate.data = testData();
-  // res.send(resultTemplate);
   connection.query(
     "select * from comment where new_id = ?",
     [req.query.new_id],
@@ -179,39 +177,6 @@ app.get("/getCommentData", function (req, res) {
     }
   );
 });
-function testData() {
-  function Comment(id) {
-    this.commentator_head_url = "";
-    this.commentator_id = 0;
-    this.commentator_name = "test";
-    this.content = "test";
-    this.create_time = "2021-09-04T09:33:12.000Z";
-    this.id = id;
-    this.new_id = 0;
-    this.parent_id = 0;
-    this.son = [];
-  }
-  const res = [];
-  for (let i = 0; i < 10000; i++) {
-    res.push(new Comment(i));
-  }
-  // for(let i = 0; i < 10; i++) {
-  //   const currComment = new Comment(parseInt("" + i));
-  //   const secondComment = [];
-  //   for(let j = 0; j < 10; j++) {
-  //     const currComment = new Comment(parseInt("" + i + j));
-  //     const threeComment = [];
-  //     for(let k = 0; k < 10; k++) {
-  //       threeComment.push(new Comment(parseInt("" + i + j + k)));
-  //     }
-  //     currComment.son = threeComment;
-  //     secondComment.push(currComment);
-  //   }
-  //   currComment.son = secondComment;
-  //   res.push(currComment);
-  // }
-  return res;
-}
 function dataConvert(d) {
   /**
    * dataConvert 为传入的 comment 表数据
