@@ -9,6 +9,7 @@ var connection = mysql.createConnection({
   password: process.env.PASSWORD,
   port: process.env.PORT,
   database: process.env.DATABASE,
+  useConnectionPooling: true,
 });
 
 connection.connect();
@@ -46,6 +47,21 @@ app.get("/new", function (req, res) {
       resultTemplate.msg = "success";
       resultTemplate.data = result;
       res.send(resultTemplate);
+    }
+  );
+});
+
+app.get("/article", function (req, res) {
+  const offset = req.query.offset ? Number(req.query.offset) * 10 : 0;
+  connection.query(
+    "select new_id, new_owner_id, new_name, article_cover_url, detail, user_id, user_name, user_account, user_head from new join (select user_id,user_name,user_account,user_head from user) as u on new_owner_id = u.user_id limit ?,10;",
+    [offset],
+    function (error, result) {
+      if (error) throw error;
+      resultTemplate.code = 200;
+      resultTemplate.msg = "success";
+      resultTemplate.data = result;
+      res.json(resultTemplate);
     }
   );
 });
@@ -135,36 +151,6 @@ app.get("/authorInfo", function (req, res) {
       console.error("服务器出错了" + err);
       res.send(new Result(200, "查询失败"));
     });
-});
-app.get("/addFollow", function (req, res) {
-  const authorId = req.query.blogger_id;
-  const fanId = req.query.fan_id;
-  const r = obEmpty();
-  connection.query(
-    "INSERT INTO fans(blogger_id,fan_id) VALUES(?,?);",
-    [authorId, fanId],
-    function (error, result) {
-      if (error) throw error;
-      r.code = 200;
-      r.msg = "success";
-      res.send(r);
-    }
-  );
-});
-app.get("/cancelFollow", function (req, res) {
-  const authorId = req.query.blogger_id;
-  const fanId = req.query.fan_id;
-  const r = obEmpty();
-  connection.query(
-    "DELETE FROM fans WHERE blogger_id = ? and fan_id = ?;",
-    [authorId, fanId],
-    function (error, result) {
-      if (error) throw error;
-      r.code = 200;
-      r.msg = "success";
-      res.send(r);
-    }
-  );
 });
 app.get("/getCommentData", function (req, res) {
   connection.query(
@@ -492,4 +478,4 @@ var server = app.listen(3001, function () {
   console.log("runing 3001...");
 });
 
-connection.end;
+connection.end();

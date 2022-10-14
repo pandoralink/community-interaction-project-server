@@ -4,15 +4,23 @@
   "description": "",
   "main": "back.js",
   "scripts": {
+    "start": "node -r dotenv/config ./bin/www && set PORT=3001",
     "server": "node -r dotenv/config back.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "poplink",
   "license": "ISC",
   "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
     "dotenv": "^16.0.1",
+    "express": "~4.16.1",
+    "express-jwt": "^7.7.5",
     "express.js": "^1.0.0",
-    "mysql": "^2.18.1",
+    "joi": "^17.6.1",
+    "jsonwebtoken": "^8.5.1",
+    "morgan": "~1.9.1",
+    "mysql2": "^2.3.3",
     "node-html-parser": "^5.3.3",
     "ws": "^8.8.1"
   }
