@@ -17,7 +17,7 @@ const jwt = {
     );
   },
 
-  // 2、解密数据（注意👀：为了演示express-jwt包的使用，后续我们不会使用verify()方法）
+  // 解密数据
   verify(token) {
     try {
       return jsonwebtoken.verify(token.replace("Bearer ", ""), jwtSecretKey, {

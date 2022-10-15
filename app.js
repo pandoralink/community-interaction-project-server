@@ -5,6 +5,7 @@ const logger = require("morgan");
 const cors = require("cors");
 const articleRouter = require("./routes/article");
 const userRouter = require("./routes/user.js");
+const messageRouter = require("./routes/message");
 const { expressjwt: jwt } = require("express-jwt");
 const jwtConfig = require("./config/jwt.config");
 const { STATUS } = require("./utils/constant");
@@ -46,6 +47,7 @@ app.use(
 
 app.use("/", articleRouter);
 app.use("/", userRouter);
+app.use("/", messageRouter);
 
 // 错误级别中间件
 app.use(function (err, req, res, next) {
