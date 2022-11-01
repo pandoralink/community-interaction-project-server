@@ -41,7 +41,7 @@ app.use(function (req, res, next) {
 });
 app.use(
   jwt({ secret: jwtConfig.jwtSecretKey, algorithms: ["HS256"] }).unless({
-    path: [/^\/(login|register)/, /^\/(article|userArticle|authorInfo)/],
+    path: [/^\/(login|register)/, /^\/(article|userArticle|authorInfo|getArticleDetail)/],
   })
 );
 

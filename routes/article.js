@@ -8,8 +8,8 @@ const {
   getAuthorInfoSchema,
   insertFollowSchema,
   deleteFollowSchema,
+  getArticleDetailSchema,
 } = require("../schemas/articleSchema");
-const { getAuthorInfo } = require("../services/articleService");
 
 router.get(
   "/article",
@@ -39,6 +39,12 @@ router.post(
   "/deleteFollow",
   expressJoi(deleteFollowSchema),
   articleController.deleteFollow
+);
+
+router.get(
+  "/getArticleDetail",
+  expressJoi(getArticleDetailSchema),
+  articleController.getArticleDetail
 );
 
 module.exports = router;

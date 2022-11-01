@@ -15,6 +15,8 @@ const articleModel = {
   insertFollow: "INSERT INTO fans(blogger_id,fan_id) VALUES(?,?);",
   // 取消关注
   deleteFollow: "DELETE FROM fans WHERE blogger_id = ? and fan_id = ?;",
+  // 查询文章详情
+  getArticleDetail: "select * from new where new_id = ?;",
 };
 
 module.exports = articleModel;

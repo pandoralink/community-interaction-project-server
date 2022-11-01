@@ -19,3 +19,7 @@ exports.insertFollow = (req, res) => {
 exports.deleteFollow = (req, res) => {
   articleService.deleteFollow(req, res)
 }
+
+exports.getArticleDetail = (req, res) => {
+  articleService.getArticleDetail(req, res)
+}

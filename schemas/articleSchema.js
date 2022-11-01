@@ -4,6 +4,7 @@ const offset = [joi.string().required(), joi.number().required()];
 const userAccount = joi.string().required();
 const blogger_id = joi.number().required();
 const fan_id = joi.number().required();
+const aid = joi.number().required();
 
 exports.getArticleListSchema = {
   query: {
@@ -35,5 +36,11 @@ exports.deleteFollowSchema = {
   body: {
     blogger_id,
     fan_id,
+  },
+};
+
+exports.getArticleDetailSchema = {
+  query: {
+    aid,
   },
 };
