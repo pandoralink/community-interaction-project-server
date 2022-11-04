@@ -6,4 +6,4 @@
 # 本地私密环境变量等配置 - 你也可以通过 github - action 配置
 # 参考资料：https://segmentfault.com/a/1190000024533450
 .env
-/.vscode
+.vscode
