@@ -41,7 +41,10 @@ app.use(function (req, res, next) {
 });
 app.use(
   jwt({ secret: jwtConfig.jwtSecretKey, algorithms: ["HS256"] }).unless({
-    path: [/^\/(login|register)/, /^\/(article|userArticle|authorInfo|getArticleDetail)/],
+    path: [
+      /^\/(login|register)/,
+      /^\/(article|userArticle|authorInfo|getArticleDetail)/,
+    ],
   })
 );
 
@@ -60,8 +63,10 @@ app.use(function (err, req, res, next) {
   return res.codeMsg(err);
 });
 
-app.listen(Number(process.env.PORT), () => {
-  console.log(`Server start on http://localhost:${process.env.PORT}`);
-})
+if (process.env.NODE_ENV !== "dev") {
+  app.listen(Number(process.env.PORT), () => {
+    console.log(`Server start on http://localhost:${process.env.PORT}`);
+  });
+}
 
 module.exports = app;
