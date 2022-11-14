@@ -60,8 +60,8 @@ app.use(function (err, req, res, next) {
   return res.codeMsg(err);
 });
 
-app.listen(3001, function () {
-  console.log("runing 3001...");
-});
+app.listen(Number(process.env.PORT), () => {
+  console.log(`Server start on http://localhost:${process.env.PORT}`);
+})
 
 module.exports = app;

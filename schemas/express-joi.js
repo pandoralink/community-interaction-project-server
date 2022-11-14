@@ -18,8 +18,7 @@ const expressJoi = function (schemas, options = { strict: false }) {
       const { error, value } = schema.validate(req[key], options); // 内容校验
 
       if (error) {
-        // 校验失败
-        res.codeMsg(error.toString());
+        // 校验失败 - 统一由错误级别中间件处理
         throw error;
       } else {
         // 校验成功，把校验的结果重新赋值到 req 对应的 key 上

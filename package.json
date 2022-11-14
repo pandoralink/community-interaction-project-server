@@ -4,7 +4,7 @@
   "description": "",
   "main": "back.js",
   "scripts": {
-    "start": "node -r dotenv/config ./bin/www && set PORT=3001",
+    "start": "node -r dotenv/config ./bin/www",
     "server": "node -r dotenv/config back.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

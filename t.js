@@ -1,5 +1,36 @@
-const token = new URL(
-  "/?id=1019&token=Bearer%20eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InVzZXJfaWQiOjEwMTksInVzZXJfbmFtZSI6Iuaip-ahkOagkeS4i-aIj-WHpOWHsCIsInVzZXJfYWNjb3VudCI6IjEwMTgyODIxIiwidXNlcl9wYXNzd29yZCI6IiIsInVzZXJfaGVhZCI6Imh0dHA6Ly8xMTYuNjMuMTUyLjIwMjo1MDAyL3VzZXJIZWFkL2RlZmF1bHRfaGVhZC5wbmcifSwiaWF0IjoxNjY1NzY1NzQ5LCJleHAiOjE2NjU3OTQ1NDl9.UwBIamX3AMw8VddbzPT-3VCTOiqFvS9xPY9Who7UT54",
-  "ws://10.34.198.197:8181"
-).searchParams;
-console.log(token[0]);
+const http = require("http");
+
+const data = JSON.stringify({
+  username: "10182821",
+  password: "123456"
+});
+
+const options = {
+  hostname: "localhost",
+  port: 3001,
+  path: "/login",
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Content-Length": data.length
+  },
+};
+
+const req = http
+  .request(options, (res) => {
+    let data = "";
+
+    res.on("data", (chunk) => {
+      data += chunk;
+    });
+
+    res.on("end", () => {
+      console.log(JSON.parse(data));
+    });
+  })
+  .on("error", (err) => {
+    console.log("Error: ", err.message);
+  });
+
+req.write(data);
+req.end();
