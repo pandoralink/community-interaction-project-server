@@ -13,13 +13,16 @@ const userService = {
   checkUser: (username, res) => {
     Pool.query(userModel.checkByUsername, [username], function (err, rows) {
       if (err) {
-        // return res.send({ code: 1, message: err.message })
-        return res.codeMsg(err);
+        return res.send(new Result({ code: STATUS.error, info: err }));
       }
 
       if (rows.length > 0) {
-        // return resp.send({ code: 1, message: '用户名被占用，请更换其他用户名！' })
-        return res.codeMsg("用户名被占用，请更换其他用户名！");
+        return res.send(
+          new Result({
+            code: STATUS.error,
+            info: "用户名被占用，请更换其他用户名！",
+          })
+        );
       }
     });
   },
@@ -31,16 +34,22 @@ const userService = {
       [{ username: username, password: password }],
       function (err, rows) {
         if (err) {
-          return res.codeMsg(err);
+          return res.send(new Result({ code: STATUS.error, info: err }));
         }
 
         if (rows.affectedRows !== 1) {
-          return res.codeMsg("注册用户失败，请稍后再试！");
+          return res.send(
+            new Result({
+              code: STATUS.error,
+              info: "注册用户失败，请稍后再试！",
+            })
+          );
         }
 
         // 注册成功提示
-        // res.send({ code: 0, message: '注册成功！' })
-        return res.codeMsg("注册成功！", 0);
+        return res.send(
+          new Result({ code: STATUS.success, info: "注册成功！" })
+        );
       }
     );
   },
@@ -52,12 +61,14 @@ const userService = {
       [username, password],
       function (err, rows) {
         if (err) {
-          return res.codeMsg(err);
+          return res.send(new Result({ code: STATUS.error, info: err }));
         }
 
         // 用户是否存在
         if (rows.length !== 1) {
-          return res.codeMsg("账号或密码错误");
+          return res.send(
+            new Result({ code: STATUS.error, info: "账号或密码错误" })
+          );
         }
 
         // 密码是否正确（使用✨bcrypt.compareSync()对密码进行比较）
@@ -75,7 +86,10 @@ const userService = {
 
         // 2、发送token到客户端（header方式）
         // res.header('Authorization', token)
-        res.cookie("token", "Bearer " + tokenStr, { maxAge: 60 * 60 * 24, httpOnly: true });
+        res.cookie("token", "Bearer " + tokenStr, {
+          maxAge: 60 * 60 * 24,
+          httpOnly: true,
+        });
         return res.send({
           code: 0,
           message: "登录成功",

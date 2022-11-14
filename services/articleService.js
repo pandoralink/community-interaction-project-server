@@ -8,7 +8,7 @@ const articleService = {
     const offset = req.query.offset ? Number(req.query.offset) * 10 : 0;
     Pool.query(articleModel.selectList, [offset], function (error, result) {
       if (error) throw error;
-      res.codeMsg("", 0, result);
+      res.send(new Result({ code: STATUS.success, data: result }));
     });
   },
   getUserArticleList: (req, res) => {
@@ -17,7 +17,7 @@ const articleService = {
       [req.query.userAccount],
       function (error, result) {
         if (error) throw error;
-        res.codeMsg("", 0, result);
+        res.send(new Result({ code: STATUS.success, data: result }));
       }
     );
   },
@@ -40,17 +40,21 @@ const articleService = {
           [authorId],
           function (error, result) {
             if (error) throw error;
-            // TODO: codeMsg 原型对象方法不好溯源，后期应该转换为 Result 构造函数
-            res.codeMsg("", 0, {
-              relate: relate,
-              fanTotal: result[0].total,
-            });
+            res.send(
+              new Result({
+                code: STATUS.success,
+                data: {
+                  relate: relate,
+                  fanTotal: result[0].total,
+                },
+              })
+            );
           }
         );
       })
       .catch((err) => {
         console.error("服务器出错了" + err);
-        res.codeMsg("查询失败");
+        res.send(new Result({ code: STATUS.error, info: "查询失败" }));
       });
   },
   insertFollow: (req, res) => {

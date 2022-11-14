@@ -10,6 +10,7 @@ const { expressjwt: jwt } = require("express-jwt");
 const jwtConfig = require("./config/jwt.config");
 const { STATUS } = require("./utils/constant");
 const { instance: wss } = require("./utils/ws");
+const { Result } = require("./types");
 
 const app = express();
 
@@ -25,20 +26,6 @@ app.use(
     credentials: true,
   })
 );
-app.use(function (req, res, next) {
-  // TODO: 后期应将状态值固定
-  // code = 0 为成功； code = 1 为失败； 默认将 code 的值设置为 1，方便处理失败的情况
-  res.codeMsg = function (err, code = 1, data = {}) {
-    res.send({
-      // 状态
-      code,
-      // 状态描述，判断 err 是 错误对象 还是 字符串
-      message: err instanceof Error ? err.message : err,
-      data,
-    });
-  };
-  next();
-});
 app.use(
   jwt({ secret: jwtConfig.jwtSecretKey, algorithms: ["HS256"] }).unless({
     path: [
@@ -55,12 +42,15 @@ app.use("/", messageRouter);
 // 错误级别中间件
 app.use(function (err, req, res, next) {
   // 捕获身份认证失败的错误
-  if (err.name === "UnauthorizedError")
-    return res.codeMsg("身份认证失败！", STATUS.loginError);
+  if (err.name === "UnauthorizedError") {
+    return res.send(
+      new Result({ code: STATUS.loginError, info: "身份认证失败！" })
+    );
+  }
 
   // 其他未知错误
   console.log(err);
-  return res.codeMsg(err);
+  return res.send(new Result({ code: STATUS.error, info: "身份认证失败！" }));
 });
 
 if (process.env.NODE_ENV !== "dev") {
