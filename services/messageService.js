@@ -4,8 +4,10 @@ const { notifyUser, instanceMap } = require("../utils/ws");
 
 const messageService = {
   send: (req, res) => {
+    // TODO: 发消息时要根据 token 确定发送人的身份
     try {
-      const { rid, content, title, headUrl, contentUrl, aid, uid } = req.body;
+      // rid: , uid: 回复人 id, type: 消息类型
+      const { rid, content, title, headUrl, contentUrl, aid, uid, type } = req.body;
       const info = notifyUser(
         parseInt(rid),
         content,
@@ -13,7 +15,8 @@ const messageService = {
         headUrl,
         contentUrl,
         aid,
-        uid
+        uid,
+        type
       );
       res.send(new Result({ code: STATUS.success, info }));
     } catch (e) {

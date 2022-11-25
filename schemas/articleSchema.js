@@ -44,3 +44,10 @@ exports.getArticleDetailSchema = {
     aid,
   },
 };
+
+exports.getArticleInfoSchema = {
+  query: {
+    aid,
+  },
+};
+

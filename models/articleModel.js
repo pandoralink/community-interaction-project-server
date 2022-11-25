@@ -17,6 +17,8 @@ const articleModel = {
   deleteFollow: "DELETE FROM fans WHERE blogger_id = ? and fan_id = ?;",
   // 查询文章详情
   getArticleDetail: "select * from new where new_id = ?;",
+  // 查询文章描述信息
+  getArticleInfo: "select new_id, new_url, new_owner_id, new_name, article_cover_url from new where new_id = ?;",
 };
 
 module.exports = articleModel;

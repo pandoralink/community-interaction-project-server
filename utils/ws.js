@@ -45,17 +45,29 @@ wss.on("connection", function (ws, req) {
   }
 });
 
-function sendMsg(id, content, title, headUrl, contentUrl, aid, uid) {
+/**
+ * 发送信息
+ * @param {number} rid 被回复人 id
+ * @param {string} content
+ * @param {string} title
+ * @param {string} headUrl
+ * @param {string} contentUrl
+ * @param {number} aid
+ * @param {number} uid 被回复人 id
+ * @param {1 | 2} type 消息类型，1 是消息，2 是通知
+ */
+function sendMsg(rid, content, title, headUrl, contentUrl, aid, uid, type) {
   const msg = {
-    id: id,
+    rid,
     content: content,
     title,
     headUrl: headUrl,
     contentUrl: contentUrl,
     aid: aid,
     uid: uid,
+    type
   };
-  const clientManager = map.get(id.toString());
+  const clientManager = map.get(rid.toString());
   let res = undefined;
   if (clientManager && clientManager.client) {
     /**
@@ -76,7 +88,7 @@ function sendMsg(id, content, title, headUrl, contentUrl, aid, uid) {
     res = "未在线";
   } else {
     // 客户端不存在
-    map.set(id.toString(), wsMsgTemplate(null, [msg]));
+    map.set(rid.toString(), wsMsgTemplate(null, [msg]));
     res = "未在线";
   }
   console.log(JSON.stringify(msg));
@@ -111,23 +123,25 @@ function notifyAuthor(id, content, name, headUrl, contentUrl, aid) {
 
 /**
  * 通知用户有人回复
- * @param {number} id
+ * @param {number} rid 被回复人 id
  * @param {string} content
  * @param {string} title
  * @param {string} headUrl
  * @param {string} contentUrl
  * @param {number} aid
- * @param {number} uid
+ * @param {number} uid 被回复人 id
+ * @param {1 | 2} type 消息类型，1 是消息，2 是通知
  */
-function notifyUser(id, content, title, headUrl, contentUrl, aid, uid) {
+function notifyUser(rid, content, title, headUrl, contentUrl, aid, uid, type) {
   const res = sendMsg(
-    parseInt(id),
+    parseInt(rid),
     content,
     title,
     headUrl,
     contentUrl,
     aid,
-    uid
+    uid,
+    type
   );
   return res;
 }

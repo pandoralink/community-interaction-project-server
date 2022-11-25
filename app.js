@@ -50,7 +50,7 @@ app.use(function (err, req, res, next) {
 
   // 其他未知错误
   console.log(err);
-  return res.send(new Result({ code: STATUS.error, info: "身份认证失败！" }));
+  return res.send(new Result({ code: STATUS.error, info: err }));
 });
 
 if (process.env.NODE_ENV !== "dev") {

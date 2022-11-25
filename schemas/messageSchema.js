@@ -7,6 +7,7 @@ const headUrl = joi.string().required().allow("");
 const contentUrl = joi.string().required().allow("");
 const aid = joi.number().required();
 const uid = joi.number().required();
+const type = joi.number().valid(1, 2).required();
 
 exports.sendSchema = {
   body: {
@@ -17,5 +18,6 @@ exports.sendSchema = {
     contentUrl,
     aid,
     uid,
+    type,
   },
 };

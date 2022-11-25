@@ -23,3 +23,7 @@ exports.deleteFollow = (req, res) => {
 exports.getArticleDetail = (req, res) => {
   articleService.getArticleDetail(req, res)
 }
+
+exports.getArticleInfo = (req, res) => {
+  articleService.getArticleInfo(req, res)
+}

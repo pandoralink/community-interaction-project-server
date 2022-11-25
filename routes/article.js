@@ -9,6 +9,7 @@ const {
   insertFollowSchema,
   deleteFollowSchema,
   getArticleDetailSchema,
+  getArticleInfoSchema,
 } = require("../schemas/articleSchema");
 
 router.get(
@@ -45,6 +46,12 @@ router.get(
   "/getArticleDetail",
   expressJoi(getArticleDetailSchema),
   articleController.getArticleDetail
+);
+
+router.get(
+  "/getArticleInfo",
+  expressJoi(getArticleInfoSchema),
+  articleController.getArticleInfo
 );
 
 module.exports = router;

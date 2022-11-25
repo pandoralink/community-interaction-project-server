@@ -106,6 +106,24 @@ const articleService = {
       }
     });
   },
+  getArticleInfo: (req, res) => {
+    // 获取文章描述信息
+    const { aid } = req.query;
+    Pool.query(articleModel.getArticleInfo, [aid], function (error, result) {
+      if (error) throw error;
+      try {
+        res.send(
+          new Result({
+            code: STATUS.success,
+            info: "success",
+            data: result && result.length && result.length > 0 && result[0],
+          })
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  },
 };
 
 module.exports = articleService;
