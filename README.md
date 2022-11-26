@@ -9,6 +9,10 @@
 
 此项目为互动社区 `APP` 的 `Server` 后台服务
 
+# feature
+
+1. 基于 `WebHooks` 实现自动化部署
+
 # 相关项目
 
 1. 原生 `Android` 开发 `APP`，技术栈为 `java`，[content-chat-app](https://github.com/pandoralink/content-chat-app)
