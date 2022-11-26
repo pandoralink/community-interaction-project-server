@@ -6,6 +6,7 @@ const cors = require("cors");
 const articleRouter = require("./routes/article");
 const userRouter = require("./routes/user.js");
 const messageRouter = require("./routes/message");
+const versionRouter = require("./routes/version");
 const { expressjwt: jwt } = require("express-jwt");
 const jwtConfig = require("./config/jwt.config");
 const { STATUS } = require("./utils/constant");
@@ -29,6 +30,7 @@ app.use(
 app.use(
   jwt({ secret: jwtConfig.jwtSecretKey, algorithms: ["HS256"] }).unless({
     path: [
+      /^\/v/,
       /^\/(login|register)/,
       /^\/(article|userArticle|authorInfo|getArticleDetail)/,
     ],
@@ -38,6 +40,7 @@ app.use(
 app.use("/", articleRouter);
 app.use("/", userRouter);
 app.use("/", messageRouter);
+app.use("/", versionRouter);
 
 // 错误级别中间件
 app.use(function (err, req, res, next) {
