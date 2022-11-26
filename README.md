@@ -11,7 +11,7 @@
 
 # feature
 
-1. 基于 `WebHooks` 实现自动化部署
+1. 基于 `Github WebHooks` 实现自动化部署
 
 # 相关项目
 
