@@ -1,0 +1,1 @@
+node -r dotenv/config ./bin/www
