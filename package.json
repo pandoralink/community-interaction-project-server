@@ -1,5 +1,5 @@
 {
-  "name": "community-interaction-project",
+  "name": "community-interaction-project-server",
   "version": "1.0.0",
   "description": "",
   "main": "back.js",
